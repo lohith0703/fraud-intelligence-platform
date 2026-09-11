@@ -7,7 +7,7 @@ conn = psycopg2.connect(
     host="localhost", port=5433, dbname="fraud_db",
     user="fraud_user", password="fraud_pass"
 )
-read_cur = conn.cursor(name="feature_scan_cursor", withhold=True)  # server-side cursor: avoids loading 6.3M rows into memory at once; withhold=True lets it survive commits
+read_cur = conn.cursor(name="feature_scan_cursor", withhold=True)
 write_cur = conn.cursor()
 
 read_cur.execute("""
@@ -19,6 +19,7 @@ read_cur.execute("""
 
 # Per-account running state, kept in memory for this single pass
 velocity = {}
+dest_velocity = {}
 amount_sum = {}
 amount_count = {}
 dest_seen = {}
@@ -31,7 +32,8 @@ def flush():
         execute_values(write_cur, """
             INSERT INTO transaction_features
                 (transaction_id, orig_account_id, event_timestamp,
-                 account_velocity, amount_deviation, balance_mismatch, is_new_destination)
+                 account_velocity, amount_deviation, balance_mismatch,
+                 is_new_destination, dest_velocity)
             VALUES %s
         """, buffer)
         conn.commit()
@@ -45,9 +47,13 @@ while True:
     for (txn_id, step, ttype, amount, orig, dest,
          oldbal, newbal, created_at) in rows:
 
-        # Feature 1: velocity
+        # Feature 1: velocity (sender side)
         velocity[orig] = velocity.get(orig, 0) + 1
         v = velocity[orig]
+
+        # Feature 5: velocity (destination side)
+        dest_velocity[dest] = dest_velocity.get(dest, 0) + 1
+        dv = dest_velocity[dest]
 
         # Feature 2: amount deviation from running average
         amount_sum[orig] = amount_sum.get(orig, 0.0) + float(amount)
@@ -62,12 +68,12 @@ while True:
             expected = float(oldbal) - float(amount)
         mismatch = abs(expected - float(newbal)) > 0.01
 
-        # Feature 4: destination novelty
+        # Feature 4: destination novelty (sender's perspective)
         seen = dest_seen.setdefault(orig, set())
         is_new_dest = dest not in seen
         seen.add(dest)
 
-        buffer.append((txn_id, orig, created_at, v, deviation, mismatch, is_new_dest))
+        buffer.append((txn_id, orig, created_at, v, deviation, mismatch, is_new_dest, dv))
 
     flush()
     processed += len(rows)
