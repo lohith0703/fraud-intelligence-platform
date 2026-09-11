@@ -31,6 +31,7 @@ account_features = FeatureView(
         Field(name="amount_deviation", dtype=Float64),
         Field(name="balance_mismatch", dtype=Bool),
         Field(name="is_new_destination", dtype=Bool),
+        Field(name="dest_velocity", dtype=Int64),
     ],
     online=True,
     source=transactions_push_source,
