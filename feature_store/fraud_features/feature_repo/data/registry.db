@@ -1,0 +1,33 @@
+
+€
+`
+
+account_id/A PaySim account (sender side of a transaction)"orig_account_idJfraud_features
+îÍ‘ÕÀØûÜîÍ‘ÕÀØûÜ
+E
+%
+__dummy"
+__dummy_idJfraud_features
+îÍ‘Õ˜‰şÜîÍ‘Õ€‹€İ1"$94f11e8b-f7d1-475d-9ee7-b1b013f0eead*îÍ‘Õ¾€à2¾
+
+account_featuresfraud_features
+account_id"
+
+amount2€£:ºevent_timestamp‚‘
+{"name": "transactions_source", "query": "SELECT orig_account_id, step, amount, created_at AS event_timestamp FROM transactions", "table": ""}ŠZfeast.infra.offline_stores.contrib.postgres_offline_store.postgres_source.PostgreSQLSource¢transactions_source’îÍ‘Õ¸ÒùÙ"îÍ‘ÕĞÜêÜ@b
+orig_account_id’latest
+îÍ‘Õ€¾ïÜîÍ‘Õ€¾ïÜbËevent_timestamp‚‘
+{"name": "transactions_source", "query": "SELECT orig_account_id, step, amount, created_at AS event_timestamp FROM transactions", "table": ""}ŠZfeast.infra.offline_stores.contrib.postgres_offline_store.postgres_source.PostgreSQLSource¢transactions_sourceªfraud_features’îÍ‘Õ¸ÒùÙ"îÍ‘ÕĞÜêÜŠ0
+
+fraud_features
+îÍ‘Õğ³‹ÚîÍ‘Õğ³‹Ú’¨
+¥
+account_featuresfraud_features"feature_view*¾
+
+account_featuresfraud_features
+account_id"
+
+amount2€£:ºevent_timestamp‚‘
+{"name": "transactions_source", "query": "SELECT orig_account_id, step, amount, created_at AS event_timestamp FROM transactions", "table": ""}ŠZfeast.infra.offline_stores.contrib.postgres_offline_store.postgres_source.PostgreSQLSource¢transactions_source’îÍ‘Õ¸ÒùÙ"îÍ‘ÕĞÜêÜ@b
+orig_account_id’latest
+îÍ‘Õ€¾ïÜîÍ‘Õ€¾ïÜ2îÍ‘ÕøõùÜB$4309b6f1-0da0-48b7-b15a-4459066818ea
