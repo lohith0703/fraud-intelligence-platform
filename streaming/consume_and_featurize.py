@@ -1,9 +1,15 @@
 import json
-from datetime import datetime
+import pandas as pd
+from datetime import datetime, timezone
 from kafka import KafkaConsumer
 import redis
+from feast import FeatureStore
 
+# Redis still used directly for OUR OWN running counters (velocity, running average) --
+# this is separate from Feast's online store, which just serves the final computed features.
 r = redis.Redis(host="localhost", port=6379, decode_responses=True)
+
+store = FeatureStore(repo_path="feature_store/fraud_features/feature_repo")
 
 consumer = KafkaConsumer(
     "transactions",
@@ -13,17 +19,17 @@ consumer = KafkaConsumer(
     group_id="feature-engineering-consumer",
 )
 
-print("Listening for transactions and computing features...\n")
+print("Listening for transactions, computing features, and pushing to Feast...\n")
 
 for message in consumer:
     txn = message.value
     account = txn["orig_account_id"]
 
-    # --- Feature 1: transaction velocity (count in Redis, no expiry yet — simple version) ---
+    # --- Feature 1: transaction velocity ---
     velocity_key = f"velocity:{account}"
     txn_count = r.incr(velocity_key)
 
-    # --- Feature 2: running average amount for this account ---
+    # --- Feature 2: running average amount ---
     sum_key = f"amount_sum:{account}"
     count_key = f"amount_count:{account}"
     r.incrbyfloat(sum_key, txn["amount"])
@@ -32,7 +38,7 @@ for message in consumer:
     avg_amount = total_amount / prev_count
     amount_deviation = txn["amount"] - avg_amount
 
- # --- Feature 3: balance consistency check (direction depends on transaction type) ---
+    # --- Feature 3: balance consistency check (direction depends on transaction type) ---
     if txn["type"] == "CASH_IN":
         expected_new_balance = txn["oldbalance_orig"] + txn["amount"]
     else:
@@ -44,18 +50,18 @@ for message in consumer:
     is_new_destination = not r.sismember(dest_seen_key, txn["dest_account_id"])
     r.sadd(dest_seen_key, txn["dest_account_id"])
 
-    features = {
-        "transaction_id": txn["transaction_id"],
-        "account_velocity": txn_count,
-        "amount_deviation": round(amount_deviation, 2),
-        "balance_mismatch": balance_mismatch,
-        "is_new_destination": is_new_destination,
-        "is_fraud": txn["is_fraud"],
-    }
+    # --- Push these computed features to Feast (writes to Feast-managed Redis online store) ---
+    df = pd.DataFrame([{
+        "orig_account_id": account,
+        "event_timestamp": datetime.now(timezone.utc),
+        "account_velocity": int(txn_count),
+        "amount_deviation": float(round(amount_deviation, 2)),
+        "balance_mismatch": bool(balance_mismatch),
+        "is_new_destination": bool(is_new_destination),
+    }])
+    store.push("transactions_push_source", df)
 
-    print(f"txn={features['transaction_id']} "
-          f"velocity={features['account_velocity']} "
-          f"amt_dev={features['amount_deviation']} "
-          f"bal_mismatch={features['balance_mismatch']} "
-          f"new_dest={features['is_new_destination']} "
-          f"fraud={features['is_fraud']}")
+    print(f"txn={txn['transaction_id']} account={account} "
+          f"velocity={txn_count} amt_dev={round(amount_deviation, 2)} "
+          f"bal_mismatch={balance_mismatch} new_dest={is_new_destination} "
+          f"fraud={txn['is_fraud']} -> pushed to Feast")

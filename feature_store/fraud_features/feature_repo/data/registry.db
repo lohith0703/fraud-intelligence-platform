@@ -1,26 +1,30 @@
 
-€
+
 `
 
-account_id/A PaySim account (sender side of a transaction)"orig_account_idJfraud_features
-îÍ‘ÕÀØûÜîÍ‘ÕÀØûÜ
-E
+account_id/A PaySim account (sender side of a transaction)"orig_account_idJfraud_features
+îÍ‘ÕÀØûÜ©Ï‘Õğåº,
+D
 %
 __dummy"
-__dummy_idJfraud_features
-îÍ‘Õ˜‰şÜîÍ‘Õ€‹€İ1"$94f11e8b-f7d1-475d-9ee7-b1b013f0eead*îÍ‘Õ¾€à2¾
-
+__dummy_idJfraud_features
+îÍ‘Õ˜‰şÜ©Ï‘Õ°½,1"$5a56bda8-0c1d-4a00-b75d-74d1f08ff6f1*©Ï‘Õ¨à—-2´
+’
 account_featuresfraud_features
-account_id"
-
-amount2€£:ºevent_timestamp‚‘
-{"name": "transactions_source", "query": "SELECT orig_account_id, step, amount, created_at AS event_timestamp FROM transactions", "table": ""}ŠZfeast.infra.offline_stores.contrib.postgres_offline_store.postgres_source.PostgreSQLSource¢transactions_source’îÍ‘Õ¸ÒùÙ"îÍ‘ÕĞÜêÜ@b
-orig_account_id’latest
-îÍ‘Õ€¾ïÜîÍ‘Õ€¾ïÜbËevent_timestamp‚‘
-{"name": "transactions_source", "query": "SELECT orig_account_id, step, amount, created_at AS event_timestamp FROM transactions", "table": ""}ŠZfeast.infra.offline_stores.contrib.postgres_offline_store.postgres_source.PostgreSQLSource¢transactions_sourceªfraud_features’îÍ‘Õ¸ÒùÙ"îÍ‘ÕĞÜêÜŠ0
+account_id"
+account_velocity"
+amount_deviation"
+balance_mismatch"
+is_new_destination2€£:¸event_timestamp‚‘
+{"name": "transactions_source", "query": "SELECT orig_account_id, step, amount, created_at AS event_timestamp FROM transactions", "table": ""}ŠZfeast.infra.offline_stores.contrib.postgres_offline_store.postgres_source.PostgreSQLSource¢transactions_source’©Ï‘ÕÈÇ‰*"©Ï‘Õà¼„,@J¦	event_timestampŠfeast.data_source.PushSource¢transactions_push_sourceÒ¸event_timestamp‚‘
+{"name": "transactions_source", "query": "SELECT orig_account_id, step, amount, created_at AS event_timestamp FROM transactions", "table": ""}ŠZfeast.infra.offline_stores.contrib.postgres_offline_store.postgres_source.PostgreSQLSource¢transactions_source’©Ï‘ÕÈÇ‰*"©Ï‘Õà¼„,’©Ï‘ÕÈ¾Œ*"©Ï‘Õ¸ä‰,b
+orig_account_id’latest
+îÍ‘Õ€¾ïÜ©Ï‘Õ, bËevent_timestamp‚‘
+{"name": "transactions_source", "query": "SELECT orig_account_id, step, amount, created_at AS event_timestamp FROM transactions", "table": ""}ŠZfeast.infra.offline_stores.contrib.postgres_offline_store.postgres_source.PostgreSQLSource¢transactions_sourceªfraud_features’îÍ‘Õ¸ÒùÙ"îÍ‘ÕĞÜêÜb·	event_timestampŠfeast.data_source.PushSource¢transactions_push_sourceªfraud_featuresÒ¸event_timestamp‚‘
+{"name": "transactions_source", "query": "SELECT orig_account_id, step, amount, created_at AS event_timestamp FROM transactions", "table": ""}ŠZfeast.infra.offline_stores.contrib.postgres_offline_store.postgres_source.PostgreSQLSource¢transactions_source’©Ï‘ÕÈÇ‰*"©Ï‘Õà¼„,’©Ï‘ÕÈ¾Œ*"©Ï‘Õ¸ä‰,Š/
 
-fraud_features
-îÍ‘Õğ³‹ÚîÍ‘Õğ³‹Ú’¨
+fraud_features
+îÍ‘Õğ³‹Ú©Ï‘ÕğÎ*’Ç
 ¥
 account_featuresfraud_features"feature_view*¾
 
@@ -31,3 +35,16 @@ account_id"
 {"name": "transactions_source", "query": "SELECT orig_account_id, step, amount, created_at AS event_timestamp FROM transactions", "table": ""}ŠZfeast.infra.offline_stores.contrib.postgres_offline_store.postgres_source.PostgreSQLSource¢transactions_source’îÍ‘Õ¸ÒùÙ"îÍ‘ÕĞÜêÜ@b
 orig_account_id’latest
 îÍ‘Õ€¾ïÜîÍ‘Õ€¾ïÜ2îÍ‘ÕøõùÜB$4309b6f1-0da0-48b7-b15a-4459066818ea
+œ
+account_featuresfraud_features"feature_view*´
+’
+account_featuresfraud_features
+account_id"
+account_velocity"
+amount_deviation"
+balance_mismatch"
+is_new_destination2€£:¸event_timestamp‚‘
+{"name": "transactions_source", "query": "SELECT orig_account_id, step, amount, created_at AS event_timestamp FROM transactions", "table": ""}ŠZfeast.infra.offline_stores.contrib.postgres_offline_store.postgres_source.PostgreSQLSource¢transactions_source’©Ï‘ÕÈÇ‰*"©Ï‘Õà¼„,@J¦	event_timestampŠfeast.data_source.PushSource¢transactions_push_sourceÒ¸event_timestamp‚‘
+{"name": "transactions_source", "query": "SELECT orig_account_id, step, amount, created_at AS event_timestamp FROM transactions", "table": ""}ŠZfeast.infra.offline_stores.contrib.postgres_offline_store.postgres_source.PostgreSQLSource¢transactions_source’©Ï‘ÕÈÇ‰*"©Ï‘Õà¼„,’©Ï‘ÕÈ¾Œ*"©Ï‘Õ¸ä‰,b
+orig_account_id’latest
+îÍ‘Õ€¾ïÜ©Ï‘Õ, 2©Ï‘Õ¨Œ¶,B$72d2acec-9597-44e5-96aa-20edecb774a1
