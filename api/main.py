@@ -137,3 +137,21 @@ def get_alerts(status: str = None, limit: int = 50):
 
     columns = ["alert_id", "transaction_id", "model_score", "ensemble_score", "severity", "status", "top_reason", "created_at"]
     return [dict(zip(columns, [str(v) if not isinstance(v, (int, float, type(None))) else v for v in row])) for row in rows]
+
+@app.patch("/alerts/{alert_id}")
+def update_alert_status(alert_id: int, status: str):
+    valid_statuses = {"open", "confirmed_fraud", "false_positive"}
+    if status not in valid_statuses:
+        return {"error": f"status must be one of {valid_statuses}"}
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("UPDATE alerts SET status = %s WHERE alert_id = %s RETURNING alert_id", (status, alert_id))
+    updated = cur.fetchone()
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    if updated is None:
+        return {"error": f"alert_id {alert_id} not found"}
+    return {"alert_id": alert_id, "new_status": status}
