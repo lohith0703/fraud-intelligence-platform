@@ -1,11 +1,13 @@
+import time
 import pandas as pd
 import xgboost as xgb
 import shap
 import joblib
 import numpy as np
 import psycopg2
-from fastapi import FastAPI
+from fastapi import FastAPI, Response
 from pydantic import BaseModel
+from prometheus_client import Counter, Histogram, generate_latest, CONTENT_TYPE_LATEST
 
 app = FastAPI(title="Fraud Intelligence API")
 
@@ -28,6 +30,11 @@ MODEL_WEIGHT = 0.9
 ANOMALY_WEIGHT = 0.1
 ANOMALY_SCORE_MIN = -0.2
 ANOMALY_SCORE_MAX = 0.2
+
+# Prometheus metrics
+REQUEST_COUNT = Counter("fraud_api_requests_total", "Total scoring requests")
+FLAGGED_COUNT = Counter("fraud_api_flagged_total", "Total transactions flagged as fraud")
+REQUEST_LATENCY = Histogram("fraud_api_request_latency_seconds", "Request latency in seconds")
 
 
 def get_db_connection():
@@ -55,6 +62,9 @@ def root():
 
 @app.post("/score")
 def score_transaction(txn: Transaction):
+    start_time = time.perf_counter()
+    REQUEST_COUNT.inc()
+
     row = {col: 0.0 for col in ALL_FEATURE_COLS}
     row["account_velocity"] = txn.account_velocity
     row["amount_deviation"] = txn.amount_deviation
@@ -105,6 +115,10 @@ def score_transaction(txn: Transaction):
         cur.close()
         conn.close()
 
+    if is_flagged:
+        FLAGGED_COUNT.inc()
+    REQUEST_LATENCY.observe(time.perf_counter() - start_time)
+
     return {
         "transaction_id": txn.transaction_id,
         "model_score": round(model_score, 4),
@@ -138,6 +152,7 @@ def get_alerts(status: str = None, limit: int = 50):
     columns = ["alert_id", "transaction_id", "model_score", "ensemble_score", "severity", "status", "top_reason", "created_at"]
     return [dict(zip(columns, [str(v) if not isinstance(v, (int, float, type(None))) else v for v in row])) for row in rows]
 
+
 @app.patch("/alerts/{alert_id}")
 def update_alert_status(alert_id: int, status: str):
     valid_statuses = {"open", "confirmed_fraud", "false_positive"}
@@ -155,3 +170,8 @@ def update_alert_status(alert_id: int, status: str):
     if updated is None:
         return {"error": f"alert_id {alert_id} not found"}
     return {"alert_id": alert_id, "new_status": status}
+
+
+@app.get("/metrics")
+def metrics():
+    return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
