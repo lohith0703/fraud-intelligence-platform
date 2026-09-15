@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fraud Intelligence Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  :root{
+    --bg:#090B10; --panel:#11141C; --panel-2:#161A24; --panel-3:#1D2230; --border:#232938; --border-soft:#1A2029;
+    --text:#EDEFF2; --text-dim:#8B93A5; --text-faint:#565E6E;
+    --red:#F0525A; --red-bg:rgba(240,82,90,0.10); --red-glow:rgba(240,82,90,0.25);
+    --amber:#F2A93B; --amber-bg:rgba(242,169,59,0.10);
+    --green:#3FD98A; --green-bg:rgba(63,217,138,0.10); --green-glow:rgba(63,217,138,0.25);
+    --accent:#6C8CFF; --accent-bg:rgba(108,140,255,0.10);
+  }
+  *{ box-sizing:border-box; }
+  body{
+    background:
+      radial-gradient(1200px 600px at 15% -10%, rgba(108,140,255,0.06), transparent 60%),
+      radial-gradient(900px 500px at 100% 0%, rgba(63,217,138,0.05), transparent 55%),
+      var(--bg);
+    color:var(--text); font-family:'IBM Plex Sans',sans-serif;
+  }
+  .mono{ font-family:'IBM Plex Mono',monospace; }
+  .panel{ background:linear-gradient(180deg, var(--panel-2), var(--panel)); border:1px solid var(--border); }
+  .panel-flat{ background:var(--panel); border:1px solid var(--border); }
+  .panel-2{ background:var(--panel-3); border:1px solid var(--border-soft); }
+  ::-webkit-scrollbar{ width:8px; height:8px; }
+  ::-webkit-scrollbar-thumb{ background:#242B3A; border-radius:4px; }
+  .fade-in{ animation: fadeIn .35s ease both; }
+  @keyframes fadeIn{ from{ opacity:0; transform:translateY(4px);} to{ opacity:1; transform:translateY(0);} }
+  .pulse-dot{ position:relative; }
+  .pulse-dot::after{
+    content:''; position:absolute; inset:-4px; border-radius:9999px;
+    background:inherit; opacity:.45; animation:pulse 1.8s ease-out infinite;
+  }
+  @keyframes pulse{ 0%{ transform:scale(1); opacity:.5;} 100%{ transform:scale(2.4); opacity:0;} }
+  .nav-btn{ transition: background .15s ease, color .15s ease; }
+  .row-hover{ transition: background .12s ease; }
+  .row-hover:hover{ background:rgba(255,255,255,0.02); }
+  .btn-primary{ background:linear-gradient(180deg,#F4F6FA,#DDE2EC); color:#0A0C10; }
+  .btn-primary:hover{ filter:brightness(0.96); }
+  .kpi-num{ letter-spacing:-0.02em; }
+  input[type=number]:focus, select:focus{ outline:none; box-shadow:0 0 0 2px var(--accent); }
+</style>
+</head>
+<body class="min-h-screen flex text-sm">
+
+  <!-- Sidebar -->
+  <aside class="w-60 shrink-0 border-r flex flex-col panel-flat">
+    <div class="px-5 py-6 border-b" style="border-color:var(--border);">
+      <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background:var(--accent-bg);">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><path d="M12 2L4 6v6c0 5 3.4 8.7 8 10 4.6-1.3 8-5 8-10V6l-8-4z"/></svg>
+        </div>
+        <div>
+          <div class="text-[15px] font-semibold leading-tight">Fraud Intelligence</div>
+          <div class="text-[11px]" style="color:var(--text-faint);">Risk Operations Console</div>
+        </div>
+      </div>
+    </div>
+    <nav class="flex-1 px-3 py-4 space-y-1">
+      <button data-view="overview" class="nav-btn active-nav w-full flex items-center gap-2.5 text-left px-3 py-2.5 rounded-lg text-[13px] font-medium" style="background:var(--panel-3); color:var(--text);">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+        Overview
+      </button>
+      <button data-view="simulate" class="nav-btn w-full flex items-center gap-2.5 text-left px-3 py-2.5 rounded-lg text-[13px]" style="color:var(--text-dim);">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L4 14h6l-1 8 9-12h-6l1-8z"/></svg>
+        Simulate Transaction
+      </button>
+      <button data-view="alerts" class="nav-btn w-full flex items-center gap-2.5 text-left px-3 py-2.5 rounded-lg text-[13px]" style="color:var(--text-dim);">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01M10.3 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L14.7 3.86a2 2 0 0 0-3.4 0z"/></svg>
+        Fraud Alerts
+      </button>
+    </nav>
+    <div class="px-5 py-4 border-t" style="border-color:var(--border);">
+      <div class="flex items-center gap-2.5">
+        <span id="status-dot" class="w-2 h-2 rounded-full pulse-dot" style="background:var(--text-faint);"></span>
+        <span id="status-text" class="text-[11px]" style="color:var(--text-faint);">Checking API…</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="flex-1 flex flex-col min-w-0">
+    <header class="px-9 py-6 border-b flex items-center justify-between" style="border-color:var(--border);">
+      <div>
+        <h1 id="page-title" class="text-xl font-semibold">Overview</h1>
+        <p id="page-sub" class="text-xs mt-0.5" style="color:var(--text-faint);">Real-time fraud detection, live from the production model</p>
+      </div>
+      <button onclick="refreshAll()" class="px-3.5 py-2 rounded-lg text-xs font-medium flex items-center gap-1.5" style="background:var(--panel-3); border:1px solid var(--border-soft);">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
+        Refresh
+      </button>
+    </header>
+
+    <div class="flex-1 overflow-y-auto p-9 space-y-8">
+
+      <!-- OVERVIEW VIEW -->
+      <section id="view-overview" class="fade-in">
+        <div class="grid grid-cols-4 gap-4 mb-8">
+          <div class="panel rounded-xl p-5">
+            <div class="text-[11px] mb-2 tracking-wide" style="color:var(--text-dim);">Total Alerts</div>
+            <div id="kpi-total" class="text-3xl font-semibold mono kpi-num">—</div>
+          </div>
+          <div class="panel rounded-xl p-5" style="box-shadow: inset 0 0 40px -20px var(--red-glow);">
+            <div class="text-[11px] mb-2 tracking-wide" style="color:var(--text-dim);">High Severity</div>
+            <div id="kpi-high" class="text-3xl font-semibold mono kpi-num" style="color:var(--red);">—</div>
+          </div>
+          <div class="panel rounded-xl p-5">
+            <div class="text-[11px] mb-2 tracking-wide" style="color:var(--text-dim);">Open (Unresolved)</div>
+            <div id="kpi-open" class="text-3xl font-semibold mono kpi-num" style="color:var(--amber);">—</div>
+          </div>
+          <div class="panel rounded-xl p-5" style="box-shadow: inset 0 0 40px -20px var(--green-glow);">
+            <div class="text-[11px] mb-2 tracking-wide" style="color:var(--text-dim);">Avg. Model Score</div>
+            <div id="kpi-avg" class="text-3xl font-semibold mono kpi-num" style="color:var(--green);">—</div>
+          </div>
+        </div>
+
+        <div class="panel rounded-xl overflow-hidden">
+          <div class="px-5 py-4 border-b flex items-center justify-between" style="border-color:var(--border);">
+            <span class="font-medium text-[13px]">Recent Alerts</span>
+            <span style="color:var(--text-faint);" class="text-[11px]">Last 5</span>
+          </div>
+          <div id="overview-alerts"></div>
+        </div>
+      </section>
+
+      <!-- SIMULATE VIEW -->
+      <section id="view-simulate" class="hidden max-w-3xl">
+        <div class="panel rounded-xl p-7">
+          <div class="font-medium mb-1 text-[15px]">Score a Transaction</div>
+          <div class="text-xs mb-6" style="color:var(--text-dim);">Send a transaction to the live XGBoost model and see its risk score, decision, and SHAP explanation.</div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <label class="block">
+              <span class="text-[11px] tracking-wide" style="color:var(--text-dim);">Type</span>
+              <select id="f-type" class="mt-1.5 w-full rounded-lg px-3 py-2.5 panel-2 text-sm">
+                <option>TRANSFER</option><option>CASH_OUT</option><option>PAYMENT</option><option>CASH_IN</option><option>DEBIT</option>
+              </select>
+            </label>
+            <label class="block">
+              <span class="text-[11px] tracking-wide" style="color:var(--text-dim);">Amount</span>
+              <input id="f-amount" type="number" value="7360.15" class="mt-1.5 w-full rounded-lg px-3 py-2.5 panel-2 text-sm mono">
+            </label>
+            <label class="block">
+              <span class="text-[11px] tracking-wide" style="color:var(--text-dim);">Account Velocity</span>
+              <input id="f-velocity" type="number" value="1" class="mt-1.5 w-full rounded-lg px-3 py-2.5 panel-2 text-sm mono">
+            </label>
+            <label class="block">
+              <span class="text-[11px] tracking-wide" style="color:var(--text-dim);">Amount Deviation</span>
+              <input id="f-deviation" type="number" value="0" class="mt-1.5 w-full rounded-lg px-3 py-2.5 panel-2 text-sm mono">
+            </label>
+            <label class="block">
+              <span class="text-[11px] tracking-wide" style="color:var(--text-dim);">Destination Velocity</span>
+              <input id="f-destvel" type="number" value="1" class="mt-1.5 w-full rounded-lg px-3 py-2.5 panel-2 text-sm mono">
+            </label>
+            <div class="flex items-end gap-5 pb-1">
+              <label class="flex items-center gap-2">
+                <input id="f-mismatch" type="checkbox" class="w-4 h-4 rounded">
+                <span class="text-xs" style="color:var(--text-dim);">Balance mismatch</span>
+              </label>
+              <label class="flex items-center gap-2">
+                <input id="f-newdest" type="checkbox" checked class="w-4 h-4 rounded">
+                <span class="text-xs" style="color:var(--text-dim);">New destination</span>
+              </label>
+            </div>
+          </div>
+
+          <button onclick="simulate()" class="mt-7 px-5 py-2.5 rounded-lg text-sm font-medium btn-primary">Score Transaction</button>
+
+          <div id="sim-result" class="hidden mt-7 pt-7 border-t" style="border-color:var(--border);"></div>
+        </div>
+      </section>
+
+      <!-- ALERTS VIEW -->
+      <section id="view-alerts" class="hidden">
+        <div class="panel rounded-xl overflow-hidden">
+          <div class="px-5 py-4 border-b" style="border-color:var(--border);">
+            <span class="font-medium text-[13px]">All Alerts</span>
+          </div>
+          <div id="alerts-table"></div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+<script>
+const API = "http://127.0.0.1:8000";
+
+function severityBadge(sev){
+  const map = { High: ['var(--red-bg)','var(--red)'], Medium: ['var(--amber-bg)','var(--amber)'] };
+  const [bg,fg] = map[sev] || ['var(--panel-3)','var(--text-dim)'];
+  return `<span class="px-2.5 py-1 rounded-md text-[11px] font-medium" style="background:${bg};color:${fg};">${sev}</span>`;
+}
+function statusBadge(st){
+  const map = { open: ['var(--amber-bg)','var(--amber)','Open'], confirmed_fraud: ['var(--red-bg)','var(--red)','Confirmed Fraud'], false_positive: ['var(--green-bg)','var(--green)','False Positive'] };
+  const [bg,fg,label] = map[st] || ['var(--panel-3)','var(--text-dim)', st];
+  return `<span class="px-2.5 py-1 rounded-md text-[11px] font-medium" style="background:${bg};color:${fg};">${label}</span>`;
+}
+
+async function fetchAlerts(){
+  try{
+    const res = await fetch(`${API}/alerts?limit=100`);
+    return res.ok ? res.json() : [];
+  }catch(e){ return []; }
+}
+
+function renderAlertRow(a, compact){
+  return `
+    <div class="row-hover flex items-center justify-between px-5 py-3.5 border-b" style="border-color:var(--border-soft);">
+      <div class="flex items-center gap-4 min-w-0">
+        <span class="mono text-xs" style="color:var(--text-faint);">#${a.transaction_id}</span>
+        ${severityBadge(a.severity)}
+        <span class="text-xs truncate" style="color:var(--text-dim);">${a.top_reason || '—'}</span>
+      </div>
+      <div class="flex items-center gap-3 shrink-0">
+        <span class="mono text-xs" style="color:var(--text-dim);">score ${a.model_score}</span>
+        ${statusBadge(a.status)}
+        ${!compact && a.status === 'open' ? `
+          <button onclick="resolveAlert(${a.alert_id}, 'confirmed_fraud')" class="text-[11px] px-2.5 py-1.5 rounded-md font-medium" style="background:var(--red-bg); color:var(--red);">Confirm Fraud</button>
+          <button onclick="resolveAlert(${a.alert_id}, 'false_positive')" class="text-[11px] px-2.5 py-1.5 rounded-md font-medium" style="background:var(--green-bg); color:var(--green);">False Positive</button>
+        ` : ''}
+      </div>
+    </div>`;
+}
+
+async function refreshOverview(){
+  const alerts = await fetchAlerts();
+  document.getElementById('kpi-total').textContent = alerts.length;
+  document.getElementById('kpi-high').textContent = alerts.filter(a=>a.severity==='High').length;
+  document.getElementById('kpi-open').textContent = alerts.filter(a=>a.status==='open').length;
+  const avg = alerts.length ? (alerts.reduce((s,a)=>s+parseFloat(a.model_score),0)/alerts.length).toFixed(3) : '—';
+  document.getElementById('kpi-avg').textContent = avg;
+  document.getElementById('overview-alerts').innerHTML = alerts.slice(0,5).map(a=>renderAlertRow(a,true)).join('') || `<div class="px-5 py-8 text-xs text-center" style="color:var(--text-faint);">No alerts yet — simulate a transaction to generate one.</div>`;
+}
+
+async function refreshAlertsTable(){
+  const alerts = await fetchAlerts();
+  document.getElementById('alerts-table').innerHTML = alerts.map(a=>renderAlertRow(a,false)).join('') || `<div class="px-5 py-8 text-xs text-center" style="color:var(--text-faint);">No alerts yet.</div>`;
+}
+
+async function resolveAlert(id, status){
+  await fetch(`${API}/alerts/${id}?status=${status}`, { method:'PATCH' });
+  refreshAll();
+}
+
+function scoreGauge(score, flagged){
+  const pct = Math.max(0, Math.min(1, score));
+  const color = flagged ? 'var(--red)' : 'var(--green)';
+  const circumference = 2 * Math.PI * 42;
+  const offset = circumference * (1 - pct);
+  return `
+    <svg width="110" height="110" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="42" fill="none" stroke="var(--panel-3)" stroke-width="8"/>
+      <circle cx="50" cy="50" r="42" fill="none" stroke="${color}" stroke-width="8" stroke-linecap="round"
+        stroke-dasharray="${circumference}" stroke-dashoffset="${offset}" transform="rotate(-90 50 50)"
+        style="transition: stroke-dashoffset .6s ease;"/>
+      <text x="50" y="47" text-anchor="middle" font-family="IBM Plex Mono" font-size="17" font-weight="600" fill="var(--text)">${score.toFixed(3)}</text>
+      <text x="50" y="63" text-anchor="middle" font-family="IBM Plex Sans" font-size="8" fill="var(--text-faint)">RISK SCORE</text>
+    </svg>`;
+}
+
+async function simulate(){
+  const btn = event.target;
+  const body = {
+    transaction_id: Math.floor(Math.random()*9000000)+1000000,
+    type: document.getElementById('f-type').value,
+    amount: parseFloat(document.getElementById('f-amount').value),
+    account_velocity: parseInt(document.getElementById('f-velocity').value),
+    amount_deviation: parseFloat(document.getElementById('f-deviation').value),
+    balance_mismatch: document.getElementById('f-mismatch').checked,
+    is_new_destination: document.getElementById('f-newdest').checked,
+    dest_velocity: parseInt(document.getElementById('f-destvel').value),
+  };
+  const res = await fetch(`${API}/score`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+  const data = await res.json();
+  const box = document.getElementById('sim-result');
+  box.classList.remove('hidden');
+  box.classList.add('fade-in');
+  const scoreColor = data.flagged ? 'var(--red)' : 'var(--green)';
+  box.innerHTML = `
+    <div class="flex items-center gap-8 mb-2">
+      ${scoreGauge(data.model_score, data.flagged)}
+      <div class="flex-1">
+        <span class="px-3 py-1.5 rounded-lg text-sm font-medium inline-block" style="background:${data.flagged ? 'var(--red-bg)' : 'var(--green-bg)'}; color:${scoreColor};">
+          ${data.flagged ? '⚠ Flagged as Fraud' : '✓ Not Flagged'}
+        </span>
+        <div class="mt-4 text-[11px] tracking-wide mb-2" style="color:var(--text-dim);">TOP CONTRIBUTING FEATURES</div>
+        <div class="space-y-1.5">
+          ${data.top_reasons.map(r=>`
+            <div class="flex items-center justify-between text-xs w-64">
+              <span class="mono" style="color:var(--text-dim);">${r.feature}</span>
+              <span class="mono font-medium" style="color:${r.impact>0?'var(--red)':'var(--green)'};">${r.impact>0?'+':''}${r.impact}</span>
+            </div>`).join('')}
+        </div>
+        ${data.alert_id ? `<div class="mt-3 text-xs" style="color:var(--text-faint);">Alert #${data.alert_id} created and added to Fraud Alerts.</div>` : ''}
+      </div>
+    </div>
+  `;
+  refreshAll();
+}
+
+async function checkStatus(){
+  try{
+    const res = await fetch(`${API}/`);
+    if(res.ok){
+      document.getElementById('status-dot').style.background = 'var(--green)';
+      document.getElementById('status-text').textContent = 'API Connected';
+      document.getElementById('status-text').style.color = 'var(--text-dim)';
+    } else throw new Error();
+  }catch(e){
+    document.getElementById('status-dot').style.background = 'var(--red)';
+    document.getElementById('status-text').textContent = 'API Unreachable';
+  }
+}
+
+function refreshAll(){
+  checkStatus();
+  refreshOverview();
+  refreshAlertsTable();
+}
+
+document.querySelectorAll('.nav-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.nav-btn').forEach(b=>{ b.style.background=''; b.style.color='var(--text-dim)'; });
+    btn.style.background = 'var(--panel-3)'; btn.style.color = 'var(--text)';
+    document.querySelectorAll('main section[id^="view-"]').forEach(s=>s.classList.add('hidden'));
+    const view = document.getElementById(`view-${btn.dataset.view}`);
+    view.classList.remove('hidden');
+    view.classList.add('fade-in');
+    const subs = { overview:'Real-time fraud detection, live from the production model', simulate:'Send a transaction to the live model for scoring', alerts:'Every transaction the model has flagged, with investigator actions' };
+    document.getElementById('page-title').textContent = btn.textContent.trim();
+    document.getElementById('page-sub').textContent = subs[btn.dataset.view];
+  });
+});
+
+refreshAll();
+setInterval(refreshAll, 10000);
+</script>
+</body>
+</html>

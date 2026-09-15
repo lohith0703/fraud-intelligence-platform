@@ -6,10 +6,18 @@ import joblib
 import numpy as np
 import psycopg2
 from fastapi import FastAPI, Response
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from prometheus_client import Counter, Histogram, generate_latest, CONTENT_TYPE_LATEST
 
 app = FastAPI(title="Fraud Intelligence API")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 print("Loading model, anomaly detector, and explainer...")
 model = xgb.XGBClassifier()
@@ -101,17 +109,22 @@ def score_transaction(txn: Transaction):
     alert_id = None
     if is_flagged:
         severity = "High" if model_score >= HIGH_SEVERITY_THRESHOLD else "Medium"
-        top_reason_str = top_reasons[0]["feature"] if top_reasons else None
+        top_reason_str = top_reasons[0]["feature"].replace("type_", "") if top_reasons else None
 
         conn = get_db_connection()
         cur = conn.cursor()
-        cur.execute("""
-            INSERT INTO alerts (transaction_id, model_score, ensemble_score, severity, top_reason)
-            VALUES (%s, %s, %s, %s, %s)
-            RETURNING alert_id
-        """, (txn.transaction_id, model_score, ensemble_score, severity, top_reason_str))
-        alert_id = cur.fetchone()[0]
-        conn.commit()
+        cur.execute("SELECT alert_id FROM alerts WHERE transaction_id = %s", (txn.transaction_id,))
+        existing = cur.fetchone()
+        if existing:
+            alert_id = existing[0]
+        else:
+            cur.execute("""
+                INSERT INTO alerts (transaction_id, model_score, ensemble_score, severity, top_reason)
+                VALUES (%s, %s, %s, %s, %s)
+                RETURNING alert_id
+            """, (txn.transaction_id, model_score, ensemble_score, severity, top_reason_str))
+            alert_id = cur.fetchone()[0]
+            conn.commit()
         cur.close()
         conn.close()
 
