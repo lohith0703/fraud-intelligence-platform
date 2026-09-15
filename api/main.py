@@ -3,6 +3,7 @@ import xgboost as xgb
 import shap
 import joblib
 import numpy as np
+import psycopg2
 from fastapi import FastAPI
 from pydantic import BaseModel
 
@@ -20,18 +21,20 @@ FEATURE_COLS_NUMERIC = [
 ]
 TYPE_COLS = ["type_CASH_IN", "type_CASH_OUT", "type_DEBIT", "type_PAYMENT", "type_TRANSFER"]
 ALL_FEATURE_COLS = FEATURE_COLS_NUMERIC + TYPE_COLS
-THRESHOLD = 0.8485  # ~80% recall / ~56% precision operating point (model-only score scale)
+THRESHOLD = 0.8485
+HIGH_SEVERITY_THRESHOLD = 0.95
 
-# Deliberate, low weight on the anomaly detector -- reflects its measured near-zero
-# overlap with known fraud (docs/05_anomaly_detection_notes.md). Kept as insurance
-# against novel fraud patterns not present in current labels, not a performance booster.
 MODEL_WEIGHT = 0.9
 ANOMALY_WEIGHT = 0.1
-
-# Rough min/max bounds from Phase 3's test-set anomaly scores, used to normalize
-# live anomaly scores into the same 0-1 range the ensemble expects.
 ANOMALY_SCORE_MIN = -0.2
 ANOMALY_SCORE_MAX = 0.2
+
+
+def get_db_connection():
+    return psycopg2.connect(
+        host="localhost", port=5433, dbname="fraud_db",
+        user="fraud_user", password="fraud_pass"
+    )
 
 
 class Transaction(BaseModel):
@@ -65,10 +68,8 @@ def score_transaction(txn: Transaction):
 
     X = pd.DataFrame([row])[ALL_FEATURE_COLS]
 
-    # Supervised model score
     model_score = float(model.predict_proba(X)[:, 1][0])
 
-    # Anomaly score, normalized to roughly 0-1 using Phase 3's observed range
     X_anomaly = X[FEATURE_COLS_NUMERIC]
     raw_anomaly = -iso_forest.decision_function(X_anomaly)[0]
     anomaly_score = float(np.clip(
@@ -76,7 +77,7 @@ def score_transaction(txn: Transaction):
     ))
 
     ensemble_score = MODEL_WEIGHT * model_score + ANOMALY_WEIGHT * anomaly_score
-    is_flagged = model_score >= THRESHOLD  # decision still uses the model-only threshold; see docs/08
+    is_flagged = model_score >= THRESHOLD
 
     shap_values = explainer.shap_values(X)[0]
     contributions = sorted(
@@ -87,12 +88,52 @@ def score_transaction(txn: Transaction):
         for feat, val in contributions[:5]
     ]
 
+    alert_id = None
+    if is_flagged:
+        severity = "High" if model_score >= HIGH_SEVERITY_THRESHOLD else "Medium"
+        top_reason_str = top_reasons[0]["feature"] if top_reasons else None
+
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("""
+            INSERT INTO alerts (transaction_id, model_score, ensemble_score, severity, top_reason)
+            VALUES (%s, %s, %s, %s, %s)
+            RETURNING alert_id
+        """, (txn.transaction_id, model_score, ensemble_score, severity, top_reason_str))
+        alert_id = cur.fetchone()[0]
+        conn.commit()
+        cur.close()
+        conn.close()
+
     return {
         "transaction_id": txn.transaction_id,
         "model_score": round(model_score, 4),
         "anomaly_score": round(anomaly_score, 4),
         "ensemble_score": round(ensemble_score, 4),
         "flagged": is_flagged,
+        "alert_id": alert_id,
         "threshold_used": THRESHOLD,
         "top_reasons": top_reasons,
     }
+
+
+@app.get("/alerts")
+def get_alerts(status: str = None, limit: int = 50):
+    conn = get_db_connection()
+    cur = conn.cursor()
+    if status:
+        cur.execute("""
+            SELECT alert_id, transaction_id, model_score, ensemble_score, severity, status, top_reason, created_at
+            FROM alerts WHERE status = %s ORDER BY created_at DESC LIMIT %s
+        """, (status, limit))
+    else:
+        cur.execute("""
+            SELECT alert_id, transaction_id, model_score, ensemble_score, severity, status, top_reason, created_at
+            FROM alerts ORDER BY created_at DESC LIMIT %s
+        """, (limit,))
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+
+    columns = ["alert_id", "transaction_id", "model_score", "ensemble_score", "severity", "status", "top_reason", "created_at"]
+    return [dict(zip(columns, [str(v) if not isinstance(v, (int, float, type(None))) else v for v in row])) for row in rows]
