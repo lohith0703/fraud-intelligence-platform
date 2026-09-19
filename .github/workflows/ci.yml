@@ -9,6 +9,20 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: fraud_user
+          POSTGRES_PASSWORD: fraud_pass
+          POSTGRES_DB: fraud_db
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -20,6 +34,22 @@ jobs:
 
       - name: Install API dependencies
         run: pip install -r api/requirements.txt pytest httpx
+
+      - name: Set up database schema
+        run: |
+          sudo apt-get install -y postgresql-client
+          PGPASSWORD=fraud_pass psql -h localhost -p 5433 -U fraud_user -d fraud_db -c "
+            CREATE TABLE IF NOT EXISTS alerts (
+                alert_id BIGSERIAL PRIMARY KEY,
+                transaction_id BIGINT NOT NULL,
+                model_score NUMERIC(6,4) NOT NULL,
+                ensemble_score NUMERIC(6,4) NOT NULL,
+                severity VARCHAR(10) NOT NULL,
+                status VARCHAR(20) NOT NULL DEFAULT 'open',
+                top_reason VARCHAR(50),
+                created_at TIMESTAMP DEFAULT NOW()
+            );
+          "
 
       - name: Run tests
         run: python -m pytest tests/test_api.py -v
