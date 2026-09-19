@@ -9,6 +9,7 @@ from fastapi import FastAPI, Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from prometheus_client import Counter, Histogram, generate_latest, CONTENT_TYPE_LATEST
+import os
 
 app = FastAPI(title="Fraud Intelligence API")
 
@@ -45,9 +46,13 @@ FLAGGED_COUNT = Counter("fraud_api_flagged_total", "Total transactions flagged a
 REQUEST_LATENCY = Histogram("fraud_api_request_latency_seconds", "Request latency in seconds")
 
 
+
+
 def get_db_connection():
     return psycopg2.connect(
-        host="localhost", port=5433, dbname="fraud_db",
+        host=os.getenv("DB_HOST", "localhost"),
+        port=int(os.getenv("DB_PORT", "5433")),
+        dbname="fraud_db",
         user="fraud_user", password="fraud_pass"
     )
 

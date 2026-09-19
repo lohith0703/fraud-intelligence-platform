@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+pandas
+xgboost
+shap
+joblib
+numpy
+psycopg2-binary
+prometheus-client
