@@ -95,6 +95,10 @@ Details: [`docs/04`](docs/04_model_training_notes.md)–[`08_ensemble_notes.md`]
 
 Details: [`docs/09_api_notes.md`](docs/09_api_notes.md)–[`docs/13_deployment_notes.md`](docs/13_deployment_notes.md)
 
+**Live API, interactive docs, real response:**
+
+![API docs live response](docs/screenshots/api_docs_live_response.png)
+
 **Dashboard preview:**
 
 ![Grafana dashboard](docs/screenshots/grafana_dashboard.png)
